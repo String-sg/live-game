@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { generatePin } from '@/lib/game';
+import { hashPassphrase } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -8,9 +9,10 @@ export async function POST(req: Request) {
     if (!passphrase) return NextResponse.json({ error: 'Passphrase required' }, { status: 400 });
 
     const sessionId = generatePin();
+    const passphraseHash = await hashPassphrase(passphrase);
     await sql`
       INSERT INTO sessions (id, passphrase, round_duration)
-      VALUES (${sessionId}, ${passphrase}, ${roundDuration || 300})
+      VALUES (${sessionId}, ${passphraseHash}, ${roundDuration || 300})
     `;
 
     return NextResponse.json({ sessionId });
