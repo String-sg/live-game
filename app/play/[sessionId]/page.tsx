@@ -149,7 +149,7 @@ export default function PlayPage() {
 
   /* ── Not yet registered ── */
   if (!playerId) return (
-    <main className="min-h-screen flex items-center justify-center p-6">
+    <main style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
       <div style={{ textAlign: 'center', maxWidth: '22rem' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🦪</div>
         <h2 className="font-display" style={{ fontSize: '1.5rem', color: 'var(--accent)', marginBottom: '0.75rem' }}>
@@ -170,7 +170,7 @@ export default function PlayPage() {
 
   /* ── LOBBY ── */
   if (sessionStatus === 'lobby' || !roundNumber) return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+    <main style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', textAlign: 'center' }}>
       <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🦪</div>
       <h1 className="font-display" style={{ fontSize: '2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
         Pearl Exchange
@@ -179,7 +179,7 @@ export default function PlayPage() {
         Logged in as <strong style={{ color: 'var(--text)' }}>{playerName}</strong>
       </p>
 
-      <div className="card" style={{ padding: '2rem', maxWidth: '20rem', width: '100%' }}>
+      <div className="card" style={{ padding: '2rem', maxWidth: '20rem', width: '100%', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div className="live-dot" />
@@ -200,7 +200,7 @@ export default function PlayPage() {
 
   /* ── ROUND ENDED ── */
   if (roundStatus === 'ended') return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+    <main style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', textAlign: 'center' }}>
       <div style={{ maxWidth: '22rem', width: '100%' }}>
         <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>{hasTraded ? '🎉' : '😔'}</div>
         <h2 className="font-display" style={{ fontSize: '2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
