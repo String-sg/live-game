@@ -2,43 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-type Mode = 'home' | 'create' | 'join';
+import Link from 'next/link';
 
 export default function HomePage() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('home');
 
-  // Create state
-  const [passphrase, setPassphrase] = useState('');
-  const [roundDuration, setRoundDuration] = useState(300);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState('');
-
-  // Join state
   const [pin, setPin] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
-
-  async function handleCreate() {
-    if (!passphrase.trim()) { setCreateError('Please enter a passphrase'); return; }
-    setCreating(true); setCreateError('');
-    try {
-      const res = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passphrase, roundDuration }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create game');
-      sessionStorage.setItem(`pp_${data.sessionId}`, passphrase);
-      router.push(`/teacher/${data.sessionId}`);
-    } catch (e: any) {
-      setCreateError(e.message);
-      setCreating(false);
-    }
-  }
 
   async function handleJoin() {
     if (pin.length !== 6) { setJoinError('Enter the 6-digit PIN'); return; }
@@ -61,123 +33,30 @@ export default function HomePage() {
     }
   }
 
-  const durMins = Math.floor(roundDuration / 60);
-  const durSecs = String(roundDuration % 60).padStart(2, '0');
-
-  /* ── HOME ──────────────────────────────────────────────────────────── */
-  if (mode === 'home') return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden" style={{ textAlign: 'center' }}>
       {/* Background glow blobs */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
         background: 'radial-gradient(ellipse 60% 50% at 20% 60%, rgba(212,168,83,0.07) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 80% 30%, rgba(96,165,250,0.06) 0%, transparent 70%)',
       }} />
 
-      <div className="relative z-10 text-center mb-14">
-        <div style={{ fontSize: '5rem', lineHeight: 1, marginBottom: '1rem' }}>🦪</div>
-        <h1 className="font-display" style={{ fontSize: '3.25rem', fontWeight: 900, color: 'var(--accent)', lineHeight: 1.1 }}>
+      {/* Hero */}
+      <div className="relative z-10 text-center" style={{ marginBottom: '2rem' }}>
+        <div style={{ fontSize: '4rem', lineHeight: 1, marginBottom: '0.75rem' }}>🦪</div>
+        <h1 className="font-display" style={{ fontSize: 'clamp(2rem, 8vw, 2.75rem)', fontWeight: 900, color: 'var(--accent)', lineHeight: 1.1 }}>
           Pearl Exchange
         </h1>
-        <p style={{ color: 'var(--muted)', marginTop: '0.75rem', fontSize: '1.05rem' }}>
+        <p style={{ color: 'var(--muted)', marginTop: '0.5rem', fontSize: '0.95rem' }}>
           Live market simulation · Classroom edition
         </p>
       </div>
 
-      <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full" style={{ maxWidth: '26rem' }}>
-        <button
-          onClick={() => setMode('create')}
-          className="flex-1 rounded-2xl text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
-          style={{ background: 'var(--accent)', color: '#0c0e14', padding: '1.25rem 1.5rem' }}
-        >
-          <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🏫</div>
-          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Create Game</div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.65, marginTop: '0.15rem' }}>I&apos;m a teacher</div>
-        </button>
-
-        <button
-          onClick={() => setMode('join')}
-          className="flex-1 rounded-2xl text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
-          style={{ background: 'var(--surface-s)', border: '1px solid var(--border)', color: 'var(--text)', padding: '1.25rem 1.5rem' }}
-        >
-          <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>🎮</div>
-          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Join Game</div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.5, marginTop: '0.15rem' }}>I&apos;m a student</div>
-        </button>
-      </div>
-    </main>
-  );
-
-  /* ── CREATE ────────────────────────────────────────────────────────── */
-  if (mode === 'create') return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div style={{ width: '100%', maxWidth: '22rem' }}>
-        <button onClick={() => setMode('home')} style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-          ← Back
-        </button>
-        <h2 className="font-display" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent)', marginBottom: '0.35rem' }}>
-          Create Game
-        </h2>
-        <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Set a passphrase to manage your session
-        </p>
-
+      {/* Join form */}
+      <div className="relative z-10" style={{ width: '100%', maxWidth: '22rem', margin: '0 auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.4rem' }}>
-              Teacher Passphrase
-            </label>
-            <input
-              className="input"
-              type="password"
-              placeholder="e.g. economics2024"
-              value={passphrase}
-              onChange={e => setPassphrase(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleCreate()}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.4rem' }}>
-              Round Duration: <span style={{ color: 'var(--accent)', fontFamily: 'DM Mono, monospace' }}>{durMins}:{durSecs}</span>
-            </label>
-            <input
-              type="range" min={60} max={600} step={30}
-              value={roundDuration}
-              onChange={e => setRoundDuration(Number(e.target.value))}
-              style={{ width: '100%', accentColor: 'var(--accent)' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
-              <span>1 min</span><span>10 min</span>
-            </div>
-          </div>
-
-          {createError && <p style={{ color: 'var(--error)', fontSize: '0.875rem' }}>{createError}</p>}
-
-          <button className="btn-primary" onClick={handleCreate} disabled={creating} style={{ width: '100%', marginTop: '0.5rem' }}>
-            {creating ? 'Creating…' : 'Create Game →'}
-          </button>
-        </div>
-      </div>
-    </main>
-  );
-
-  /* ── JOIN ──────────────────────────────────────────────────────────── */
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div style={{ width: '100%', maxWidth: '22rem' }}>
-        <button onClick={() => setMode('home')} style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-          ← Back
-        </button>
-        <h2 className="font-display" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent)', marginBottom: '0.35rem' }}>
-          Join Game
-        </h2>
-        <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Enter the PIN from the teacher&apos;s screen
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.4rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.4rem', textAlign: 'center' }}>
               Game PIN
             </label>
             <input
@@ -191,7 +70,7 @@ export default function HomePage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.4rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.4rem', textAlign: 'center' }}>
               Your Name
             </label>
             <input
@@ -201,14 +80,25 @@ export default function HomePage() {
               value={playerName}
               onChange={e => setPlayerName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleJoin()}
+              style={{ textAlign: 'center' }}
             />
           </div>
 
-          {joinError && <p style={{ color: 'var(--error)', fontSize: '0.875rem' }}>{joinError}</p>}
+          {joinError && <p style={{ color: 'var(--error)', fontSize: '0.875rem', textAlign: 'center' }}>{joinError}</p>}
 
-          <button className="btn-primary" onClick={handleJoin} disabled={joining} style={{ width: '100%', marginTop: '0.5rem' }}>
-            {joining ? 'Joining…' : 'Join Game →'}
+          <button className="btn-primary" onClick={handleJoin} disabled={joining} style={{ width: '100%', marginTop: '0.25rem', fontSize: '1.05rem' }}>
+            {joining ? 'Joining…' : '🎮 Join Game'}
           </button>
+        </div>
+
+        {/* Teacher link */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+          <Link
+            href="/create"
+            style={{ color: 'var(--muted)', fontSize: '0.85rem', textDecoration: 'none', transition: 'color 0.15s' }}
+          >
+            🏫 I&apos;m a teacher → <span style={{ textDecoration: 'underline' }}>Create a game</span>
+          </Link>
         </div>
       </div>
     </main>

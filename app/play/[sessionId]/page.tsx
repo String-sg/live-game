@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 
-interface Player { id: string; name: string; }
+interface Player { id: string; name: string; total_surplus: number; }
 
 interface RoleState {
   sessionStatus: string;
