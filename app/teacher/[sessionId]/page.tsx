@@ -327,7 +327,7 @@ export default function TeacherPage() {
                 disabled={loading}
                 style={{
                   flex: '1 1 auto', padding: '0.875rem 1.5rem', borderRadius: '0.75rem',
-                  fontWeight: 600, cursor: 'pointer', border: 'none', transition: 'opacity 0.15s',
+                  fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.15s',
                   background: 'rgba(248,113,113,0.15)', color: 'var(--error)', border: '1px solid rgba(248,113,113,0.35)',
                 }}
               >
