@@ -11,6 +11,11 @@ export async function PUT(req: Request, { params }: { params: { id: string, tran
     if (txs.length === 0) return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     const tx = txs[0];
 
+    if (tx.session_id !== id) return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
+
+    const rounds = await sql`SELECT * FROM rounds WHERE id = ${tx.round_id}`;
+    if (rounds.length === 0 || rounds[0].status !== 'active') return NextResponse.json({ error: 'Round is not active' }, { status: 400 });
+
     if (tx.partner_id !== playerId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (tx.status !== 'pending') return NextResponse.json({ error: 'Transaction no longer pending' }, { status: 400 });
 
