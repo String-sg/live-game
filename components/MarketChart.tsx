@@ -2,7 +2,7 @@
 
 import {
   ComposedChart, Line, Scatter, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine, Area,
+  Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
