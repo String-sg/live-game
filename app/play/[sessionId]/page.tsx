@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 
-interface Player { id: string; name: string; }
+interface Player { id: string; name: string; total_surplus: number; }
 
 interface RoleState {
   sessionStatus: string;
@@ -190,15 +190,15 @@ export default function PlayPage() {
           <div style={{ marginBottom: '0.5rem', fontSize: '0.8rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>This Round</div>
           {hasTraded ? (
             <>
-              <div className="font-mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: state.surplusEarned >= 0 ? 'var(--success)' : 'var(--error)' }}>
-                {state.surplusEarned >= 0 ? '+' : ''}${state.surplusEarned.toFixed(0)}
+              <div className="font-mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: Number(state.surplusEarned) >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                {Number(state.surplusEarned) >= 0 ? '+' : ''}${Number(state.surplusEarned).toFixed(0)}
               </div>
               <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.35rem' }}>surplus earned</p>
             </>
           ) : (
             <>
               <div className="font-mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--error)' }}>
-                −${secretValue?.toFixed(0)}
+                −${Number(secretValue ?? 0).toFixed(0)}
               </div>
               <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.35rem' }}>penalty (no trade)</p>
             </>
@@ -208,7 +208,7 @@ export default function PlayPage() {
         <div className="card" style={{ padding: '1rem' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '0.25rem' }}>Total Accumulated Surplus</div>
           <div className="font-mono" style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent)' }}>
-            ${(allPlayers.find(p => p.id === playerId)?.total_surplus ?? 0).toFixed(0)}
+            ${Number(allPlayers.find(p => p.id === playerId)?.total_surplus ?? 0).toFixed(0)}
           </div>
         </div>
 
@@ -262,7 +262,7 @@ export default function PlayPage() {
           <div style={{ fontSize: '2rem', marginBottom: '0.35rem' }}>✅</div>
           <div style={{ fontWeight: 600, color: 'var(--success)', marginBottom: '0.15rem' }}>Trade Complete!</div>
           <div className="font-mono" style={{ fontSize: '1.5rem', color: 'var(--success)' }}>
-            {state.surplusEarned >= 0 ? '+' : ''}${state.surplusEarned.toFixed(0)} surplus
+            {Number(state.surplusEarned) >= 0 ? '+' : ''}${Number(state.surplusEarned).toFixed(0)} surplus
           </div>
           <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
             Waiting for the round to end…
