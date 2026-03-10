@@ -15,6 +15,7 @@ interface RoleState {
   roundStatus: string | null;
   shockDescription?: string | null;
   incomingTransaction: { id: string; price: number; initiator_id: string; initiator_name: string } | null;
+  incomingTransactions: { id: string; price: number; initiator_id: string; initiator_name: string }[];
   outgoingTransaction: { id: string; price: number; partner_id: string; partner_name: string } | null;
 }
 
@@ -27,7 +28,7 @@ export default function PlayPage() {
   const [state, setState] = useState<RoleState>({
     sessionStatus: 'lobby', role: null, secretValue: null,
     hasTraded: false, surplusEarned: 0, roundNumber: null,
-    roundStatus: null, incomingTransaction: null, outgoingTransaction: null,
+    roundStatus: null, incomingTransaction: null, incomingTransactions: [], outgoingTransaction: null,
   });
 
   // Transaction form
@@ -103,11 +104,11 @@ export default function PlayPage() {
   }
 
   /* ── Confirm/reject incoming trade ── */
-  async function respondToTrade(confirmed: boolean) {
-    if (!playerId || !state.incomingTransaction) return;
+  async function respondToTrade(transactionId: string, price: number, confirmed: boolean) {
+    if (!playerId) return;
     setConfirming(true); setTxError('');
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/transactions/${state.incomingTransaction.id}/confirm`, {
+      const res = await fetch(`/api/sessions/${sessionId}/transactions/${transactionId}/confirm`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId, confirmed }),
@@ -115,7 +116,7 @@ export default function PlayPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       if (confirmed) {
-        setTxSuccess(`Trade confirmed at $${state.incomingTransaction.price}! 🎉`);
+        setTxSuccess(`Trade confirmed at $${price}! 🎉`);
       } else {
         setTxError('Trade rejected.');
       }
@@ -270,31 +271,38 @@ export default function PlayPage() {
         </div>
       )}
 
-      {/* Incoming confirmation request */}
-      {!hasTraded && state.incomingTransaction && (
-        <div className="card slide-in" style={{ padding: '1.25rem', border: '1px solid rgba(250,204,21,0.4)', background: 'rgba(250,204,21,0.05)', marginBottom: '1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.35rem' }}>
-            📨 Trade Request from <span style={{ color: 'var(--warn)' }}>{state.incomingTransaction.initiator_name}</span>
+      {/* Incoming confirmation requests */}
+      {!hasTraded && state.incomingTransactions.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 600 }}>
+            📨 {state.incomingTransactions.length} Incoming Trade Request{state.incomingTransactions.length > 1 ? 's' : ''}
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-            They want to trade at <span className="font-mono" style={{ color: 'var(--warn)', fontSize: '1.1rem', fontWeight: 700 }}>${state.incomingTransaction.price}</span>
-          </p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={() => respondToTrade(true)}
-              disabled={confirming}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: 'none', background: 'var(--success)', color: '#0c0e14', fontSize: '1rem' }}
-            >
-              {confirming ? '…' : '✓ Accept'}
-            </button>
-            <button
-              onClick={() => respondToTrade(false)}
-              disabled={confirming}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: '1px solid var(--error)', background: 'transparent', color: 'var(--error)', fontSize: '1rem' }}
-            >
-              ✕ Decline
-            </button>
-          </div>
+          {state.incomingTransactions.map((tx) => (
+            <div key={tx.id} className="card slide-in" style={{ padding: '1.25rem', border: '1px solid rgba(250,204,21,0.4)', background: 'rgba(250,204,21,0.05)' }}>
+              <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.35rem' }}>
+                Trade from <span style={{ color: 'var(--warn)' }}>{tx.initiator_name}</span>
+              </div>
+              <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                They want to trade at <span className="font-mono" style={{ color: 'var(--warn)', fontSize: '1.1rem', fontWeight: 700 }}>${tx.price}</span>
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => respondToTrade(tx.id, tx.price, true)}
+                  disabled={confirming}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: 'none', background: 'var(--success)', color: '#0c0e14', fontSize: '1rem' }}
+                >
+                  {confirming ? '…' : '✓ Accept'}
+                </button>
+                <button
+                  onClick={() => respondToTrade(tx.id, tx.price, false)}
+                  disabled={confirming}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: '1px solid var(--error)', background: 'transparent', color: 'var(--error)', fontSize: '1rem' }}
+                >
+                  ✕ Decline
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
