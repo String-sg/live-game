@@ -1,16 +1,35 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <main style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: '3rem' }}>🦪</div>
+      </main>
+    }>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [pin, setPin] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
+
+  /* Prefill PIN from ?pin= query param (QR code link) */
+  useEffect(() => {
+    const qPin = searchParams.get('pin');
+    if (qPin) setPin(qPin);
+  }, [searchParams]);
 
   async function handleJoin() {
     if (pin.length !== 6) { setJoinError('Enter the 6-digit PIN'); return; }

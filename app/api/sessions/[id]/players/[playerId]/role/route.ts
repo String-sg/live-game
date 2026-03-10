@@ -37,7 +37,7 @@ export async function GET(req: Request, { params }: { params: { id: string, play
       FROM transactions t
       JOIN players p ON t.initiator_id = p.id
       WHERE t.round_id = ${currentRound.id} AND t.partner_id = ${playerId} AND t.status = 'pending'
-      LIMIT 1
+      ORDER BY t.created_at DESC
     `;
 
     const outgoingTx = await sql`
@@ -58,6 +58,7 @@ export async function GET(req: Request, { params }: { params: { id: string, play
       roundStatus: currentRound.status,
       shockDescription: currentRound.shock_description,
       incomingTransaction: incomingTx[0] || null,
+      incomingTransactions: incomingTx.length > 0 ? incomingTx : [],
       outgoingTransaction: outgoingTx[0] || null
     });
   } catch (error: any) {

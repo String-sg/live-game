@@ -15,6 +15,7 @@ interface RoleState {
   roundStatus: string | null;
   shockDescription?: string | null;
   incomingTransaction: { id: string; price: number; initiator_id: string; initiator_name: string } | null;
+  incomingTransactions: { id: string; price: number; initiator_id: string; initiator_name: string }[];
   outgoingTransaction: { id: string; price: number; partner_id: string; partner_name: string } | null;
 }
 
@@ -27,7 +28,7 @@ export default function PlayPage() {
   const [state, setState] = useState<RoleState>({
     sessionStatus: 'lobby', role: null, secretValue: null,
     hasTraded: false, surplusEarned: 0, roundNumber: null,
-    roundStatus: null, incomingTransaction: null, outgoingTransaction: null,
+    roundStatus: null, incomingTransaction: null, incomingTransactions: [], outgoingTransaction: null,
   });
 
   // Transaction form
@@ -38,6 +39,11 @@ export default function PlayPage() {
   const [txError, setTxError] = useState('');
   const [txSuccess, setTxSuccess] = useState('');
   const [confirming, setConfirming] = useState(false);
+
+  // Autocomplete state
+  const [partnerSearch, setPartnerSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevRoundStatus = useRef<string | null>(null);
@@ -61,7 +67,7 @@ export default function PlayPage() {
       if (rd && !rd.error) {
         // Detect round change → clear transaction form
         if (rd.roundNumber !== prevRoundStatus.current) {
-          setTxError(''); setTxSuccess(''); setSelectedPartner(''); setTradePrice('');
+          setTxError(''); setTxSuccess(''); setSelectedPartner(''); setTradePrice(''); setPartnerSearch('');
           prevRoundStatus.current = rd.roundNumber;
         }
         setState(rd);
@@ -76,6 +82,23 @@ export default function PlayPage() {
     pollRef.current = setInterval(() => fetchState(playerId), 3000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [playerId, fetchState]);
+
+  /* ── Close autocomplete on click outside ── */
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  /* ── Filtered players for autocomplete ── */
+  const otherPlayers = allPlayers.filter(p => p.id !== playerId);
+  const filteredPlayers = partnerSearch.trim()
+    ? otherPlayers.filter(p => p.name.toLowerCase().includes(partnerSearch.toLowerCase()))
+    : otherPlayers;
 
   /* ── Submit trade ── */
   async function submitTrade() {
@@ -103,11 +126,11 @@ export default function PlayPage() {
   }
 
   /* ── Confirm/reject incoming trade ── */
-  async function respondToTrade(confirmed: boolean) {
-    if (!playerId || !state.incomingTransaction) return;
+  async function respondToTrade(transactionId: string, price: number, confirmed: boolean) {
+    if (!playerId) return;
     setConfirming(true); setTxError('');
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/transactions/${state.incomingTransaction.id}/confirm`, {
+      const res = await fetch(`/api/sessions/${sessionId}/transactions/${transactionId}/confirm`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId, confirmed }),
@@ -115,7 +138,7 @@ export default function PlayPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       if (confirmed) {
-        setTxSuccess(`Trade confirmed at $${state.incomingTransaction.price}! 🎉`);
+        setTxSuccess(`Trade confirmed at $${price}! 🎉`);
       } else {
         setTxError('Trade rejected.');
       }
@@ -126,7 +149,7 @@ export default function PlayPage() {
 
   /* ── Not yet registered ── */
   if (!playerId) return (
-    <main className="min-h-screen flex items-center justify-center p-6">
+    <main style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
       <div style={{ textAlign: 'center', maxWidth: '22rem' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🦪</div>
         <h2 className="font-display" style={{ fontSize: '1.5rem', color: 'var(--accent)', marginBottom: '0.75rem' }}>
@@ -145,11 +168,9 @@ export default function PlayPage() {
   const roleBg    = role === 'buyer' ? 'rgba(96,165,250,0.08)' : 'rgba(251,146,60,0.08)';
   const roleGlow  = role === 'buyer' ? 'buyer-glow' : 'seller-glow';
 
-  const otherPlayers = allPlayers.filter(p => p.id !== playerId);
-
   /* ── LOBBY ── */
   if (sessionStatus === 'lobby' || !roundNumber) return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+    <main style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', textAlign: 'center' }}>
       <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🦪</div>
       <h1 className="font-display" style={{ fontSize: '2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
         Pearl Exchange
@@ -158,7 +179,7 @@ export default function PlayPage() {
         Logged in as <strong style={{ color: 'var(--text)' }}>{playerName}</strong>
       </p>
 
-      <div className="card" style={{ padding: '2rem', maxWidth: '20rem', width: '100%' }}>
+      <div className="card" style={{ padding: '2rem', maxWidth: '20rem', width: '100%', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div className="live-dot" />
@@ -179,7 +200,7 @@ export default function PlayPage() {
 
   /* ── ROUND ENDED ── */
   if (roundStatus === 'ended') return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+    <main style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', textAlign: 'center' }}>
       <div style={{ maxWidth: '22rem', width: '100%' }}>
         <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>{hasTraded ? '🎉' : '😔'}</div>
         <h2 className="font-display" style={{ fontSize: '2rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
@@ -270,36 +291,43 @@ export default function PlayPage() {
         </div>
       )}
 
-      {/* Incoming confirmation request */}
-      {!hasTraded && state.incomingTransaction && (
-        <div className="card slide-in" style={{ padding: '1.25rem', border: '1px solid rgba(250,204,21,0.4)', background: 'rgba(250,204,21,0.05)', marginBottom: '1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.35rem' }}>
-            📨 Trade Request from <span style={{ color: 'var(--warn)' }}>{state.incomingTransaction.initiator_name}</span>
+      {/* Incoming confirmation requests */}
+      {!hasTraded && state.incomingTransactions.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', fontWeight: 600 }}>
+            📨 {state.incomingTransactions.length} Incoming Trade Request{state.incomingTransactions.length > 1 ? 's' : ''}
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-            They want to trade at <span className="font-mono" style={{ color: 'var(--warn)', fontSize: '1.1rem', fontWeight: 700 }}>${state.incomingTransaction.price}</span>
-          </p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={() => respondToTrade(true)}
-              disabled={confirming}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: 'none', background: 'var(--success)', color: '#0c0e14', fontSize: '1rem' }}
-            >
-              {confirming ? '…' : '✓ Accept'}
-            </button>
-            <button
-              onClick={() => respondToTrade(false)}
-              disabled={confirming}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: '1px solid var(--error)', background: 'transparent', color: 'var(--error)', fontSize: '1rem' }}
-            >
-              ✕ Decline
-            </button>
-          </div>
+          {state.incomingTransactions.map((tx) => (
+            <div key={tx.id} className="card slide-in" style={{ padding: '1.25rem', border: '1px solid rgba(250,204,21,0.4)', background: 'rgba(250,204,21,0.05)' }}>
+              <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.35rem' }}>
+                Trade from <span style={{ color: 'var(--warn)' }}>{tx.initiator_name}</span>
+              </div>
+              <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                They want to trade at <span className="font-mono" style={{ color: 'var(--warn)', fontSize: '1.1rem', fontWeight: 700 }}>${tx.price}</span>
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => respondToTrade(tx.id, tx.price, true)}
+                  disabled={confirming}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: 'none', background: 'var(--success)', color: '#0c0e14', fontSize: '1rem' }}
+                >
+                  {confirming ? '…' : '✓ Accept'}
+                </button>
+                <button
+                  onClick={() => respondToTrade(tx.id, tx.price, false)}
+                  disabled={confirming}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: '0.65rem', fontWeight: 700, cursor: 'pointer', border: '1px solid var(--error)', background: 'transparent', color: 'var(--error)', fontSize: '1rem' }}
+                >
+                  ✕ Decline
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Outgoing pending */}
-      {!hasTraded && state.outgoingTransaction && !state.incomingTransaction && (
+      {!hasTraded && state.outgoingTransaction && (
         <div style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.2)', borderRadius: '1rem', padding: '1rem', textAlign: 'center', marginBottom: '1rem' }}>
           <div style={{ fontSize: '1.5rem', marginBottom: '0.35rem' }}>⏳</div>
           <div style={{ fontWeight: 600, color: 'var(--warn)' }}>Waiting for {state.outgoingTransaction.partner_name} to confirm…</div>
@@ -310,7 +338,7 @@ export default function PlayPage() {
       )}
 
       {/* Trade form */}
-      {!hasTraded && !state.incomingTransaction && !state.outgoingTransaction && (
+      {!hasTraded && state.incomingTransactions.length === 0 && !state.outgoingTransaction && (
         <div className="card" style={{ padding: '1.25rem' }}>
           <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: '0.75rem' }}>
             Log a Trade
@@ -320,21 +348,63 @@ export default function PlayPage() {
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div>
+            <div ref={searchRef} style={{ position: 'relative' }}>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '0.3rem' }}>
                 Trading with
               </label>
-              <select
+              <input
                 className="input"
-                value={selectedPartner}
-                onChange={e => setSelectedPartner(e.target.value)}
-                style={{ appearance: 'auto' }}
-              >
-                <option value="">Select your partner…</option>
-                {otherPlayers.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+                type="text"
+                placeholder="Search by name…"
+                value={partnerSearch}
+                onChange={e => {
+                  setPartnerSearch(e.target.value);
+                  setSelectedPartner('');
+                  setShowDropdown(true);
+                }}
+                onFocus={() => setShowDropdown(true)}
+                autoComplete="off"
+                style={{ color: selectedPartner ? 'var(--text)' : undefined }}
+              />
+              {showDropdown && filteredPlayers.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '0.5rem', marginTop: '0.25rem',
+                  maxHeight: '12rem', overflowY: 'auto',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                }}>
+                  {filteredPlayers.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPartner(p.id);
+                        setPartnerSearch(p.name);
+                        setShowDropdown(false);
+                      }}
+                      style={{
+                        width: '100%', padding: '0.6rem 0.75rem', textAlign: 'left',
+                        background: p.id === selectedPartner ? 'var(--surface-2)' : 'transparent',
+                        border: 'none', color: 'var(--text)', cursor: 'pointer',
+                        fontSize: '0.9rem', borderBottom: '1px solid var(--border)',
+                      }}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showDropdown && partnerSearch.trim() && filteredPlayers.length === 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '0.5rem', marginTop: '0.25rem', padding: '0.75rem',
+                  color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center',
+                }}>
+                  No players found
+                </div>
+              )}
             </div>
 
             <div>

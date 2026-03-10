@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Inter, Playfair_Display, DM_Mono } from "next/font/google";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
@@ -17,6 +18,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-K9SYMPYVZR"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-K9SYMPYVZR');
+          `}
+        </Script>
+      </head>
       <body className={`${inter.variable} ${playfair.variable} ${dm_mono.variable} font-sans`}>
         {children}
       </body>

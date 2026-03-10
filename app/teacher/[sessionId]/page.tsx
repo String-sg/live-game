@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { QRCodeSVG } from 'qrcode.react';
 
 const MarketChart = dynamic(() => import('@/components/MarketChart'), { ssr: false });
 
@@ -52,6 +53,7 @@ export default function TeacherPage() {
   const [shockShift, setShockShift] = useState(15);
   const [shockSubmitting, setShockSubmitting] = useState(false);
   const [shockSuccess, setShockSuccess] = useState('');
+  const [showQR, setShowQR] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -206,8 +208,60 @@ export default function TeacherPage() {
           <span className="font-mono" style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.15em', background: 'var(--surface-s)', border: '1px solid var(--border)', borderRadius: '0.5rem', padding: '0.2rem 0.75rem' }}>
             {sessionId}
           </span>
+          <button
+            onClick={() => setShowQR(true)}
+            title="Show QR Code"
+            style={{ background: 'var(--surface-s)', border: '1px solid var(--border)', borderRadius: '0.5rem', padding: '0.35rem 0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="3" height="3" />
+              <line x1="21" y1="14" x2="21" y2="14.01" />
+              <line x1="21" y1="21" x2="21" y2="21.01" />
+              <line x1="17" y1="17" x2="17" y2="17.01" />
+              <line x1="21" y1="17" x2="21" y2="17.01" />
+              <line x1="17" y1="21" x2="17" y2="21.01" />
+            </svg>
+          </button>
         </div>
       </header>
+
+      {/* ── QR Code Modal ── */}
+      {showQR && (
+        <div
+          onClick={() => setShowQR(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--surface)', borderRadius: '1.5rem', padding: '2.5rem', textAlign: 'center', maxWidth: '360px', width: '90vw', cursor: 'default', border: '1px solid var(--border)' }}
+          >
+            <h2 className="font-display" style={{ fontSize: '1.5rem', color: 'var(--accent)', marginBottom: '0.35rem' }}>Join the Game</h2>
+            <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>Scan to join Pearl Exchange</p>
+            <div style={{ background: '#ffffff', borderRadius: '1rem', padding: '1.25rem', display: 'inline-block', marginBottom: '1.5rem' }}>
+              <QRCodeSVG
+                value={`https://buy.string.sg/?pin=${sessionId}`}
+                size={220}
+                level="H"
+                includeMargin={false}
+              />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.35rem' }}>Game PIN</div>
+              <div className="font-mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.2em' }}>{sessionId}</div>
+            </div>
+            <p style={{ fontSize: '1.1rem', color: 'var(--muted)', fontWeight: 600 }}>buy.string.sg</p>
+            <button
+              onClick={() => setShowQR(false)}
+              style={{ marginTop: '1.25rem', padding: '0.5rem 1.5rem', background: 'transparent', border: '1px solid var(--border)', borderRadius: '0.5rem', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid var(--error)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: 'var(--error)', fontSize: '0.875rem' }}>
