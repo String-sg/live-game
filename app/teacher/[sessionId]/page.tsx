@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+const MarketChart = dynamic(() => import('@/components/MarketChart'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 interface Player {
@@ -181,7 +184,7 @@ export default function TeacherPage() {
   const confirmedTxs = transactions.filter(t => t.status === 'confirmed');
   const pendingTxs   = transactions.filter(t => t.status === 'pending');
   const tradedCount  = players.filter(p => p.has_traded).length;
-  const totalSurplus = confirmedTxs.reduce((s, t) => s + (t.consumer_surplus ?? 0) + (t.producer_surplus ?? 0), 0);
+  const totalSurplus = confirmedTxs.reduce((s, t) => s + Number(t.consumer_surplus ?? 0) + Number(t.producer_surplus ?? 0), 0);
 
   return (
     <main style={{ minHeight: '100svh', padding: '1rem', maxWidth: '1100px', margin: '0 auto' }}>
@@ -275,8 +278,8 @@ export default function TeacherPage() {
                   {p.has_traded !== undefined && (
                     <span style={{ fontSize: '0.85rem' }}>{p.has_traded ? '✅' : '⏳'}</span>
                   )}
-                  <span className="font-mono" style={{ fontSize: '0.8rem', color: p.total_surplus >= 0 ? 'var(--success)' : 'var(--error)', minWidth: '2.5rem', textAlign: 'right' }}>
-                    ${p.total_surplus.toFixed(0)}
+                  <span className="font-mono" style={{ fontSize: '0.8rem', color: Number(p.total_surplus) >= 0 ? 'var(--success)' : 'var(--error)', minWidth: '2.5rem', textAlign: 'right' }}>
+                    ${Number(p.total_surplus).toFixed(0)}
                   </span>
                 </div>
               ))}
@@ -398,6 +401,11 @@ export default function TeacherPage() {
             </div>
           )}
 
+          {/* Market curves chart */}
+          {(currentRound || roundSummary) && (
+            <MarketChart players={players} transactions={transactions} />
+          )}
+
           {/* Live transaction feed */}
           <div className="card" style={{ padding: '1rem', flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -435,8 +443,8 @@ export default function TeacherPage() {
                       </div>
                       {tx.status === 'confirmed' && tx.consumer_surplus != null && (
                         <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: '0.1rem' }}>
-                          CS: <span style={{ color: 'var(--success)' }}>${tx.consumer_surplus.toFixed(0)}</span>
-                          &nbsp;·&nbsp;PS: <span style={{ color: 'var(--success)' }}>${tx.producer_surplus?.toFixed(0)}</span>
+                          CS: <span style={{ color: 'var(--success)' }}>${Number(tx.consumer_surplus).toFixed(0)}</span>
+                          &nbsp;·&nbsp;PS: <span style={{ color: 'var(--success)' }}>${Number(tx.producer_surplus ?? 0).toFixed(0)}</span>
                         </div>
                       )}
                     </div>
