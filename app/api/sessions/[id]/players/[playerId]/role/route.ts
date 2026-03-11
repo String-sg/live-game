@@ -9,6 +9,9 @@ export async function GET(req: Request, { params }: { params: { id: string, play
     if (sessionRes.length === 0) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     const sessionStatus = sessionRes[0].status;
 
+    const playerRes = await sql`SELECT id FROM players WHERE id = ${playerId} AND session_id = ${id}`;
+    if (playerRes.length === 0) return NextResponse.json({ error: 'Player not found in session' }, { status: 404 });
+
     const currentRounds = await sql`
       SELECT * FROM rounds
       WHERE session_id = ${id}
