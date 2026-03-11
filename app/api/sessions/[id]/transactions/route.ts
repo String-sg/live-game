@@ -59,13 +59,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: 'One or both players have already traded' }, { status: 400 });
     }
 
-    // Check for pending transactions
+    // Check for pending transactions involving either player in any role
     const pending = await sql`
       SELECT id FROM transactions
-      WHERE round_id = ${round.id} AND status = 'pending' AND (initiator_id = ${initiatorId} OR partner_id = ${initiatorId})
+      WHERE round_id = ${round.id} AND status = 'pending'
+        AND (
+          initiator_id = ${initiatorId} OR partner_id = ${initiatorId}
+          OR initiator_id = ${partnerId} OR partner_id = ${partnerId}
+        )
     `;
     if (pending.length > 0) {
-      return NextResponse.json({ error: 'You already have a pending transaction' }, { status: 400 });
+      return NextResponse.json({ error: 'One or both players already have a pending transaction' }, { status: 400 });
     }
 
     const txs = await sql`
