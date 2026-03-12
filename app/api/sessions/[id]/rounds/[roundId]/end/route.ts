@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import { verifyPassphrase } from '@/lib/auth';
 
 export async function POST(req: Request, { params }: { params: { id: string, roundId: string } }) {
   try {
@@ -8,7 +9,7 @@ export async function POST(req: Request, { params }: { params: { id: string, rou
 
     const session = await sql`SELECT * FROM sessions WHERE id = ${id}`;
     if (session.length === 0) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    if (session[0].passphrase !== passphrase) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await verifyPassphrase(passphrase, session[0].passphrase))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     // End round
     await sql`UPDATE rounds SET status = 'ended', ended_at = NOW() WHERE id = ${roundId}`;
