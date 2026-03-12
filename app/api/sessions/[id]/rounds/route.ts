@@ -11,6 +11,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (session.length === 0) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     if (session[0].passphrase !== passphrase) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Ensure there is no active round for this session
+    const activeRound = await sql`
+      SELECT id FROM rounds WHERE session_id = ${id} AND status = 'active'
+    `;
+    if (activeRound.length > 0) {
+      return NextResponse.json(
+        { error: 'A round is already active for this session. End the current round before starting a new one.' },
+        { status: 409 }
+      );
+    }
+
     // Update session status to active
     await sql`UPDATE sessions SET status = 'active' WHERE id = ${id}`;
 
@@ -30,8 +41,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     // Create new round
     const newRounds = await sql`
-      INSERT INTO rounds (session_id, round_number, shock_description)
-      VALUES (${id}, ${nextRoundNumber}, ${shock?.description || null})
+      INSERT INTO rounds (session_id, round_number, shock_description, status)
+      VALUES (${id}, ${nextRoundNumber}, ${shock?.description || null}, 'active')
       RETURNING id
     `;
     const roundId = newRounds[0].id;
